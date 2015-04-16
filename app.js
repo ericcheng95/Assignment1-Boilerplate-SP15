@@ -2,6 +2,7 @@
 var express = require('express');
 var passport = require('passport');
 var InstagramStrategy = require('passport-instagram').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
 var http = require('http');
 var path = require('path');
 var handlebars = require('express-handlebars');
@@ -10,6 +11,7 @@ var session = require('express-session');
 var cookieParser = require('cookie-parser');
 var dotenv = require('dotenv');
 var Instagram = require('instagram-node-lib');
+var Facebook = require('fbgraph');
 var mongoose = require('mongoose');
 var app = express();
 
@@ -24,6 +26,11 @@ var INSTAGRAM_CALLBACK_URL = process.env.INSTAGRAM_CALLBACK_URL;
 var INSTAGRAM_ACCESS_TOKEN = "";
 Instagram.set('client_id', INSTAGRAM_CLIENT_ID);
 Instagram.set('client_secret', INSTAGRAM_CLIENT_SECRET);
+
+var FACEBOOK_CLIENT_ID = process.env.FACEBOOK_APP_ID;
+var FACEBOOK_CLIENT_SECRET = process.env.FACEBOOK_APP_SECRET;
+var FACEBOOK_CALLBACK_URL = process.env.FACEBOOK_CALLBACK_URL;
+var FACEBOOK_ACCESS_TOKEN = "";
 
 //connect to database
 mongoose.connect(process.env.MONGODB_CONNECTION_URL);
@@ -81,6 +88,26 @@ passport.use(new InstagramStrategy({
   }
 ));
 
+passport.use(new FacebookStrategy({
+  clientID: FACEBOOK_CLIENT_ID,
+  clientSecret: FACEBOOK_CLIENT_SECRET,
+  callbackURL: FACEBOOK_CALLBACK_URL
+  },
+  function(accessToken, refreshToken, profile, done) {
+    models.User.findOrCreate({
+      "name": profile.username,
+      "id": profile.id,
+      "access_token": accessToken
+    }, function(err, user, created) {
+
+      models.User.findOrCreate({},function(err, user, created) {
+        if (err) {return done (err); }
+        done(null, user);
+      })
+    });
+  }
+));
+
 //Configures the Template engine
 app.engine('handlebars', handlebars({defaultLayout: 'layout'}));
 app.set('view engine', 'handlebars');
@@ -107,20 +134,29 @@ function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) { 
     return next(); 
   }
-  res.redirect('/login');
+  res.redirect('/instagramlogin');
 }
 
 //routes
 app.get('/', function(req, res){
-  res.render('login');
+  //res.render('instagramlogin');
+  res.render('facebooklogin');
 });
 
-app.get('/login', function(req, res){
-  res.render('login', { user: req.user });
+app.get('/instagramlogin', function(req, res){
+  res.render('instagramlogin', { user: req.user });
 });
 
-app.get('/account', ensureAuthenticated, function(req, res){
-  res.render('account', {user: req.user});
+app.get('/facebooklogin', function(req,res){
+  res.render('facebooklogin', { user:req.user });
+});
+
+app.get('/instagramaccount', ensureAuthenticated, function(req, res){
+  res.render('instagramaccount', {user: req.user});
+});
+
+app.get('/facebookaccount', ensureAuthenticated, function(req,res){
+  res.render('facebookaccount', {user: req.user});
 });
 
 app.get('/photos', ensureAuthenticated, function(req, res){
@@ -160,16 +196,51 @@ app.get('/auth/instagram',
     // function will not be called.
   });
 
+app.get('/auth/facebook',
+  passport.authenticate('facebook'),
+  function(req, res){
+   /* if (!req.query.code) {
+      var authUrl = facebook.getOauthUrl({
+        "client_id": conf.client_id,
+        "redirect_uri": confi.redirect_uri,
+        "scope": conf.scope
+      });
+
+      if (!req.query.error) {
+        res.redirect(authUrl);
+      } else {
+        res.send('access denied');
+      }
+      return;
+    }
+
+    facebook.authorize({
+      "client_id": conf.client_id,
+      "redirect_uri": conf.redirect_uri,
+      "client_secret": conf.client_secret,
+      "code": req.query.code
+    }, function(err, facebookRes) {
+      res.redirect('/UserHasLoggedIn');
+    });*/
+
+  });
+
 // GET /auth/instagram/callback
 //   Use passport.authenticate() as route middleware to authenticate the
 //   request.  If authentication fails, the user will be redirected back to the
 //   login page.  Otherwise, the primary route function function will be called,
 //   which, in this example, will redirect the user to the home page.
 app.get('/auth/instagram/callback', 
-  passport.authenticate('instagram', { failureRedirect: '/login'}),
+  passport.authenticate('instagram', { failureRedirect: '/instagramlogin'}),
   function(req, res) {
     res.redirect('/photos');
   });
+
+app.get('/auth/facebook/callback',
+  passport.authenticate('facebook', {failureRedirect: '/facebooklogin'}),
+  function(req, res) {
+    res.redirect('/facebookaccount');
+  })
 
 app.get('/logout', function(req, res){
   req.logout();
