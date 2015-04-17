@@ -105,6 +105,8 @@ passport.use(new FacebookStrategy({
         done(null, user);
       })
     });
+    Facebook.get("/me?fields=feed", function(err, data){console.log(data.name);
+    });
   }
 ));
 
@@ -134,13 +136,12 @@ function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) { 
     return next(); 
   }
-  res.redirect('/instagramlogin');
+  res.redirect('/facebooklogin');
 }
 
 //routes
 app.get('/', function(req, res){
-  //res.render('instagramlogin');
-  res.render('facebooklogin');
+  res.render('login');
 });
 
 app.get('/instagramlogin', function(req, res){
@@ -148,7 +149,7 @@ app.get('/instagramlogin', function(req, res){
 });
 
 app.get('/facebooklogin', function(req,res){
-  res.render('facebooklogin', { user:req.user });
+  res.render('facebooklogin', { user: req.user });
 });
 
 app.get('/instagramaccount', ensureAuthenticated, function(req, res){
@@ -156,10 +157,14 @@ app.get('/instagramaccount', ensureAuthenticated, function(req, res){
 });
 
 app.get('/facebookaccount', ensureAuthenticated, function(req,res){
-  res.render('facebookaccount', {user: req.user});
+  Facebook.get('/me', function(err, data){
+    console.log(data);
+
+    res.render('facebookaccount', {user: data});
+  });
 });
 
-app.get('/photos', ensureAuthenticated, function(req, res){
+app.get('/instagramphotos', ensureAuthenticated, function(req, res){
   var query  = models.User.where({ name: req.user.username });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
@@ -173,16 +178,41 @@ app.get('/photos', ensureAuthenticated, function(req, res){
             //create temporary json object
             tempJSON = {};
             tempJSON.url = item.images.low_resolution.url;
+            if (item.caption)
+              tempJSON.caption = item.caption.text;
             //insert json object into image array
             return tempJSON;
           });
-          res.render('photos', {photos: imageArr});
+          res.render('instagramphotos', {user: req.user, photos: imageArr});
         }
       }); 
     }
   });
 });
 
+app.get('/facebookphotos', ensureAuthenticated, function(req, res){
+  var query  = models.User.where({ name: req.user.username });
+  query.findOne(function (err, user) {
+    if (err) return handleError(err);
+    if (user) {
+      // doc may be null if no document matched
+      Facebook.user.photos({
+        access_token: user.access_token,
+        complete: function(data) {
+          //Map will iterate through the returned data obj
+          var imageArr = data.map(function(item) {
+            //create temporary json object
+            tempJSON = {};
+            tempJSON.url = item.images.low_resolution.url;
+            //insert json object into image array
+            return tempJSON;
+          });
+          res.render('facebookphotos', {photos: imageArr});
+        }
+      }); 
+    }
+  });
+});
 
 // GET /auth/instagram
 //   Use passport.authenticate() as route middleware to authenticate the
@@ -197,13 +227,13 @@ app.get('/auth/instagram',
   });
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook'),
-  function(req, res){
-   /* if (!req.query.code) {
+  passport.authenticate('facebook', {scope: ['email, user_about_me, user_birthday']})
+  /*function(req, res){
+    if (!req.query.code) {
       var authUrl = facebook.getOauthUrl({
         "client_id": conf.client_id,
-        "redirect_uri": confi.redirect_uri,
-        "scope": conf.scope
+        "redirect_uri": conf.redirect_uri,
+        "scope": ['email, user_about_me, user_birthday, user_photos, user_location, publish_stream']
       });
 
       if (!req.query.error) {
@@ -221,9 +251,9 @@ app.get('/auth/facebook',
       "code": req.query.code
     }, function(err, facebookRes) {
       res.redirect('/UserHasLoggedIn');
-    });*/
+    });
 
-  });
+  }*/);
 
 // GET /auth/instagram/callback
 //   Use passport.authenticate() as route middleware to authenticate the
@@ -233,14 +263,16 @@ app.get('/auth/facebook',
 app.get('/auth/instagram/callback', 
   passport.authenticate('instagram', { failureRedirect: '/instagramlogin'}),
   function(req, res) {
-    res.redirect('/photos');
+    res.redirect('/instagramphotos');
   });
 
 app.get('/auth/facebook/callback',
   passport.authenticate('facebook', {failureRedirect: '/facebooklogin'}),
   function(req, res) {
+    Facebook.setAccessToken(req.user.access_token);
     res.redirect('/facebookaccount');
-  })
+  }
+);
 
 app.get('/logout', function(req, res){
   req.logout();
