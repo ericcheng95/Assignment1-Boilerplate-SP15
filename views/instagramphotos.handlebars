@@ -1,7 +1,25 @@
-<p>Welcome to Instagram {{user.displayName}}</p>
-<div class="col-md-10">
+<link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+<link rel="stylesheet" type="text/css" href="css/bootstrap-theme.css">
+<link rel="stylesheet" type="text/css" href="css/assignment1.css">
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+
+<div class="container">
+<button class="btn btn-default"><a href="/logout">Log Out</a></button>
+
+<div class="jumbotron">
+  <h1><i class="fa fa-instagram fa-lg"></i> Instagram</h1>
+  <p>Hello! {{user.displayName}}.</p>
+  <p>Take a look at the photo's you've liked on Instagram!</p>
+</div>
+
 {{#each photos}}
-  <img src="{{url}}" class="img-responsive" class="img hashtag-img">
-  <p>{{caption}}</p>
+  <div class="panel panel-default">
+    <div class="panel-title">  
+      {{caption}}
+    </div>
+    <div class="panel-content">
+    <img src="{{url}}" class="img-responsive" class="img hashtag-img">
+    </div>
+  </div>
 {{/each}}
 </div>

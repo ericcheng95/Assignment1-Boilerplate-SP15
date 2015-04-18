@@ -105,8 +105,9 @@ passport.use(new FacebookStrategy({
         done(null, user);
       })
     });
-    Facebook.get("/me?fields=feed", function(err, data){console.log(data.name);
-    });
+    Facebook.setAccessToken(accessToken);
+    /*Facebook.get("/me", function(err, data){console.log(data.name);
+    });*/
   }
 ));
 
@@ -136,6 +137,20 @@ function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) { 
     return next(); 
   }
+  res.redirect('/login');
+}
+
+function ensureAuthenticatedInstagram(req, res, next) {
+  if (req.isAuthenticated()) { 
+    return next(); 
+  }
+  res.redirect('/instagramlogin');
+}
+
+function ensureAuthenticatedFacebook(req,res,next) {
+  if (req.isAuthenticated()) { 
+    return next(); 
+  }
   res.redirect('/facebooklogin');
 }
 
@@ -152,19 +167,21 @@ app.get('/facebooklogin', function(req,res){
   res.render('facebooklogin', { user: req.user });
 });
 
-app.get('/instagramaccount', ensureAuthenticated, function(req, res){
+app.get('/instagramaccount', ensureAuthenticatedInstagram, function(req, res){
   res.render('instagramaccount', {user: req.user});
 });
 
-app.get('/facebookaccount', ensureAuthenticated, function(req,res){
+/*app.get('/facebookaccount', ensureAuthenticated, function(req,res){
+  //Facebook.setAccessToken(req.user.access_token);
+  //Facebook.get("/me", function(err, data){console.log(data.first_name);
+    });
   Facebook.get('/me', function(err, data){
     console.log(data);
-
     res.render('facebookaccount', {user: data});
   });
-});
+});*/
 
-app.get('/instagramphotos', ensureAuthenticated, function(req, res){
+app.get('/instagramphotos', ensureAuthenticatedInstagram, function(req, res){
   var query  = models.User.where({ name: req.user.username });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
@@ -190,11 +207,12 @@ app.get('/instagramphotos', ensureAuthenticated, function(req, res){
   });
 });
 
-app.get('/facebookphotos', ensureAuthenticated, function(req, res){
+app.get('/facebookphotos', ensureAuthenticatedFacebook, function(req, res){
   var query  = models.User.where({ name: req.user.username });
   query.findOne(function (err, user) {
     if (err) return handleError(err);
     if (user) {
+      Facebook.setAccessToken(req.user.access_token);
       // doc may be null if no document matched
       Facebook.user.photos({
         access_token: user.access_token,
@@ -227,13 +245,13 @@ app.get('/auth/instagram',
   });
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook', {scope: ['email, user_about_me, user_birthday']})
-  /*function(req, res){
+  //passport.authenticate('facebook', {scope: ['email, user_about_me, user_birthday']}),
+  function(req, res){
     if (!req.query.code) {
-      var authUrl = facebook.getOauthUrl({
-        "client_id": conf.client_id,
-        "redirect_uri": conf.redirect_uri,
-        "scope": ['email, user_about_me, user_birthday, user_photos, user_location, publish_stream']
+      var authUrl = Facebook.getOauthUrl({
+        'client_id': process.env.FACEBOOK_APP_ID,
+        'redirect_uri': 'http://localhost:3000/auth/facebook',
+        //'scope': ['email', 'user_about_me', 'user_photos', 'user_birthday']
       });
 
       if (!req.query.error) {
@@ -244,16 +262,23 @@ app.get('/auth/facebook',
       return;
     }
 
-    facebook.authorize({
-      "client_id": conf.client_id,
-      "redirect_uri": conf.redirect_uri,
-      "client_secret": conf.client_secret,
+    Facebook.authorize({
+      "client_id": process.env.FACEBOOK_APP_ID,
+      "redirect_uri": 'http://localhost:3000/auth/facebook',
+      "client_secret": process.env.FACEBOOK_APP_SECRET,
       "code": req.query.code
     }, function(err, facebookRes) {
       res.redirect('/UserHasLoggedIn');
     });
+  });
 
-  }*/);
+app.get('/UserHasLoggedIn', function(req, res) {
+  Facebook.get('me', function(err, response) {
+    //console.log(err); //if there is an error this will return a value
+    data = { facebookData: response};
+    res.render('facebookaccount', data);
+  });
+});
 
 // GET /auth/instagram/callback
 //   Use passport.authenticate() as route middleware to authenticate the

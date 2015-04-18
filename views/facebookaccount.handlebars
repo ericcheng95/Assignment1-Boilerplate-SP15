@@ -1,6 +1,42 @@
-<div class="col-md-6">
-<p>ID: {{user.id}}</p>
-<p>Welcome to Facebook {{user.first_name}}</p>
-<p>Email: {{user.email}}</p>
-<p>Albums: {{user.albums}}</p>
-</div>
+<!doctype html>
+
+<html>
+<head>
+	<title>Boilerplate</title>	
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->        
+      <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+      <link rel="stylesheet" type="text/css" href="css/bootstrap-theme.css">
+      <link rel="stylesheet" type="text/css" href="css/assignment1.css">
+      <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+      <script src="/js/d3.js" charset="utf-8"></script>
+</head>
+
+<body>
+      <div class="container">
+      <button class="btn btn-default"><a href="/logout">Log Out</a></button>
+	<div class="jumbotron">
+      	<h1><i class="fa fa-facebook-official fa-lg"></i>acebook</h1>
+          <p>Hello! {{facebookData.name}}</p>
+    <br> 
+    <p><i class="fa fa-envelope-o"></i> {{facebookData.email}} </p>
+    <p><i class="fa fa-birthday-cake"> </i> {{facebookData.birthday}}</p>
+    <p><i class="fa fa-quote-left"></i>
+     {{facebookData.quotes}}
+    <i class="fa fa-quote-right"></i></p>
+    </div>
+    </div>
+
+
+<script src="https://code.jquery.com/jquery.js"></script>
+    <script src="js/bootstrap.js"></script>
+</body>
+</html>
