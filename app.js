@@ -250,7 +250,8 @@ app.get('/auth/facebook',
     if (!req.query.code) {
       var authUrl = Facebook.getOauthUrl({
         'client_id': process.env.FACEBOOK_APP_ID,
-        'redirect_uri': 'http://localhost:3000/auth/facebook',
+        //'redirect_uri': 'http://localhost:3000/auth/facebook',
+        'redirect_uri': 'http://b7chenglab1.herokuapp.com/auth/facebook',
         //'scope': ['email', 'user_about_me', 'user_photos', 'user_birthday']
       });
 
@@ -264,7 +265,8 @@ app.get('/auth/facebook',
 
     Facebook.authorize({
       "client_id": process.env.FACEBOOK_APP_ID,
-      "redirect_uri": 'http://localhost:3000/auth/facebook',
+      //"redirect_uri": 'http://localhost:3000/auth/facebook',
+      "redirect_uri": 'http://b7chenglab1.herokuapp.com/auth/facebook'
       "client_secret": process.env.FACEBOOK_APP_SECRET,
       "code": req.query.code
     }, function(err, facebookRes) {
