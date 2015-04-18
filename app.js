@@ -266,7 +266,7 @@ app.get('/auth/facebook',
     Facebook.authorize({
       "client_id": process.env.FACEBOOK_APP_ID,
       //"redirect_uri": 'http://localhost:3000/auth/facebook',
-      "redirect_uri": 'http://b7chenglab1.herokuapp.com/auth/facebook'
+      "redirect_uri": 'http://b7chenglab1.herokuapp.com/auth/facebook',
       "client_secret": process.env.FACEBOOK_APP_SECRET,
       "code": req.query.code
     }, function(err, facebookRes) {
